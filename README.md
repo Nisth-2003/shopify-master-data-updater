@@ -43,3 +43,4 @@ http://127.0.0.1:5000
 - Shopify `Name` -> Master `Order ID`
 - Shopify `Email` -> Master `Email`
 - Shopify `Phone` -> Master `Mobile no`
+# shopify-master-data-updater
