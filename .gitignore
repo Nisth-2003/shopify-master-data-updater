@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Project-specific
+uploads/
+outputs/
+*.xlsx
+*.xls
+*.csv
+.DS_Store
+.flaskenv
+.env

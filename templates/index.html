@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopify → Master Updater</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page">
+    <div class="card hero">
+      <div>
+        <h1>Shopify → Master Updater</h1>
+        <p class="subtitle">Upload Shopify export and Master Excel. Match by Order ID and update only Email and Mobile no.</p>
+      </div>
+      <div class="badge">Fixed Mapping</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if success %}
+      <div class="card success-card">
+        <h2>Update completed</h2>
+
+        <div class="stats">
+          <div class="stat">
+            <span>Matched Order IDs</span>
+            <strong>{{ result.matched }}</strong>
+          </div>
+          <div class="stat">
+            <span>Email updated</span>
+            <strong>{{ result.email_updated }}</strong>
+          </div>
+          <div class="stat">
+            <span>Mobile updated</span>
+            <strong>{{ result.mobile_updated }}</strong>
+          </div>
+          <div class="stat">
+            <span>Unmatched rows</span>
+            <strong>{{ result.unmatched }}</strong>
+          </div>
+        </div>
+
+        <div class="download-group">
+          <a class="button primary" href="{{ url_for('download', filename=file) }}">Download Updated File</a>
+
+          {% if result.changed_mobile_file %}
+            <a class="button secondary" href="{{ url_for('download', filename=result.changed_mobile_file) }}">Download Changed Mobile IDs</a>
+          {% endif %}
+
+          {% if result.changed_email_file %}
+            <a class="button secondary" href="{{ url_for('download', filename=result.changed_email_file) }}">Download Changed Email IDs</a>
+          {% endif %}
+
+          {% if result.unmatched_file %}
+            <a class="button secondary" href="{{ url_for('download', filename=result.unmatched_file) }}">Download Unmatched IDs</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if result.changed_mobile_ids %}
+      <div class="card result-card">
+        <h3>📱 Order IDs whose Mobile number changed</h3>
+        <p class="small-note">These Order IDs had their mobile number updated in the master file.</p>
+        <div class="id-box">
+          {% for order_id in result.changed_mobile_ids %}
+            <span class="id-chip">{{ order_id }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if result.changed_email_ids %}
+      <div class="card result-card">
+        <h3>📧 Order IDs whose Email changed</h3>
+        <p class="small-note">These Order IDs had their email updated in the master file.</p>
+        <div class="id-box">
+          {% for order_id in result.changed_email_ids %}
+            <span class="id-chip">{{ order_id }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if result.unmatched_order_ids %}
+      <div class="card result-card">
+        <h3>⚠️ Unmatched Order IDs</h3>
+        <p class="small-note">These Order IDs were found in the master file but not in the Shopify file.</p>
+        <div class="id-box">
+          {% for order_id in result.unmatched_order_ids %}
+            <span class="id-chip warning">{{ order_id }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <a class="button primary" href="{{ url_for('index') }}">Run Another Update</a>
+      </div>
+
+    {% elif sheets %}
+      <div class="card">
+        <h2>Select Master Sheet</h2>
+        <form method="post">
+          <input type="hidden" name="step" value="process">
+          <input type="hidden" name="shopify_saved_name" value="{{ shopify_saved_name }}">
+          <input type="hidden" name="master_saved_name" value="{{ master_saved_name }}">
+
+          <div class="form-group">
+            <label for="sheet_name">Master Sheet Name</label>
+            <select name="sheet_name" id="sheet_name" required>
+              <option value="">Select a sheet</option>
+              {% for sheet in sheets %}
+              <option value="{{ sheet }}">{{ sheet }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" name="fill_blanks_only" {% if fill_blanks_only %}checked{% endif %}>
+            <span>Update only blank cells in Master</span>
+          </label>
+
+          <button class="button primary" type="submit">Run Update</button>
+        </form>
+      </div>
+
+    {% else %}
+      <div class="grid">
+        <div class="card">
+          <h2>Upload Files</h2>
+          <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="step" value="upload">
+
+            <div class="form-group">
+              <label for="shopify_file">Shopify File</label>
+              <input type="file" name="shopify_file" id="shopify_file" accept=".csv,.xlsx,.xls" required>
+            </div>
+
+            <div class="form-group">
+              <label for="master_file">Master File</label>
+              <input type="file" name="master_file" id="master_file" accept=".xlsx,.xls" required>
+            </div>
+
+            <label class="check">
+              <input type="checkbox" name="fill_blanks_only" checked>
+              <span>Update only blank cells in Master</span>
+            </label>
+
+            <button class="button primary" type="submit">Next</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Fixed Mapping</h2>
+          <div class="mapping">
+            <div><strong>Shopify Name</strong> → Master Order ID</div>
+            <div><strong>Shopify Email</strong> → Master Email</div>
+            <div><strong>Shopify Phone</strong> → Master Mobile no</div>
+          </div>
+
+          <h3>Required columns</h3>
+          <ul>
+            <li>Shopify: Name, Email, Phone</li>
+            <li>Master: Order ID, Email, Mobile no</li>
+          </ul>
+
+          <h3>Safe update</h3>
+          <p>Only Email and Mobile no are updated. Other columns remain unchanged.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>
